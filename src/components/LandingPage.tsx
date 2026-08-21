@@ -1,5 +1,6 @@
 import Link from "next/link";
 import BrandLogo from "@/components/BrandLogo";
+import SiteFooter from "@/components/SiteFooter";
 
 export default function LandingPage() {
   return (
@@ -86,10 +87,7 @@ export default function LandingPage() {
         </ul>
       </section>
 
-      <footer className="landing-footer">
-        <BrandLogo size={28} showWordmark />
-        <p>Valora · Twój portfel w jednym rytmie</p>
-      </footer>
+      <SiteFooter variant="landing" />
     </div>
   );
 }

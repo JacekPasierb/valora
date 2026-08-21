@@ -6,6 +6,7 @@ import {useRouter} from "next/navigation";
 import BrandLogo from "@/components/BrandLogo";
 import {ButtonSpinner} from "@/components/Loader";
 import PasswordField from "@/components/PasswordField";
+import SiteFooter from "@/components/SiteFooter";
 
 type Step = "email" | "reset" | "done";
 
@@ -199,6 +200,8 @@ export default function ForgotPasswordPage() {
             </Link>
           </p>
         </div>
+
+        <SiteFooter variant="auth" />
       </div>
     </div>
   );

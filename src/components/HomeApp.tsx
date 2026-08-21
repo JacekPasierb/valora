@@ -6,6 +6,7 @@ import BrandLogo from "@/components/BrandLogo";
 import Dashboard from "@/components/Dashboard";
 import PurchaseGuide from "@/components/PurchaseGuide";
 import Sidebar, {AppView} from "@/components/Sidebar";
+import SiteFooter from "@/components/SiteFooter";
 import {AppLoadingSkeleton} from "@/components/skeletons";
 import TransactionForm from "@/components/TransactionForm";
 import TransactionList from "@/components/TransactionList";
@@ -75,7 +76,10 @@ function AppChrome({
           </button>
         </header>
 
-        <main className="app-main">{children}</main>
+        <main className="app-main">
+          <div className="app-main-body">{children}</div>
+          <SiteFooter variant="app" />
+        </main>
       </div>
     </div>
   );

@@ -7,6 +7,7 @@ import {useRouter} from "next/navigation";
 import BrandLogo from "@/components/BrandLogo";
 import {ButtonSpinner} from "@/components/Loader";
 import PasswordField from "@/components/PasswordField";
+import SiteFooter from "@/components/SiteFooter";
 
 export default function SignInPage() {
   const router = useRouter();
@@ -114,6 +115,8 @@ export default function SignInPage() {
             </Link>
           </p>
         </form>
+
+        <SiteFooter variant="auth" />
       </div>
     </div>
   );
