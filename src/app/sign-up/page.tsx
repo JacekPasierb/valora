@@ -73,10 +73,10 @@ export default function SignUpPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(ellipse_at_top,_#e8f0ee_0%,_#f6f4ef_45%,_#efeae2_100%)] px-4 py-8">
-      <div className="w-full max-w-md">
-        <div className="mb-8 flex flex-col items-center">
-          <BrandLogo size={72} />
+    <div className="auth-screen">
+      <div className="auth-screen-inner">
+        <div className="auth-screen-brand">
+          <BrandLogo size={56} />
           <p className="brand-mark mt-3 text-center text-3xl font-bold tracking-tight text-ink">
             Valora
           </p>
