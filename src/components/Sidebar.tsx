@@ -151,7 +151,9 @@ export default function Sidebar({
                   </div>
                   <button
                     type="button"
-                    onClick={() => signOut({callbackUrl: "/sign-in"})}
+                    onClick={() => {
+                      void signOut({callbackUrl: "/", redirect: true});
+                    }}
                     className="nav-item border border-white/10 text-white/80 hover:bg-white/5"
                   >
                     Wyloguj się
