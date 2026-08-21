@@ -584,6 +584,85 @@ body.menu-open {
   color: var(--muted);
 }
 
+/* Loader + skeletons */
+.loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.loader-ring {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+
+.loader-spin {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 2px solid color-mix(in srgb, var(--accent-strong) 22%, transparent);
+  border-top-color: var(--accent-strong);
+  animation: loader-spin 0.85s linear infinite;
+}
+
+.loader-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.btn-spinner {
+  display: inline-block;
+  width: 0.95rem;
+  height: 0.95rem;
+  margin-right: 0.45rem;
+  vertical-align: -0.15em;
+  border-radius: 9999px;
+  border: 2px solid rgb(255 255 255 / 0.35);
+  border-top-color: white;
+  animation: loader-spin 0.7s linear infinite;
+}
+
+.session-skeleton {
+  display: flex;
+  min-height: 100dvh;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 0%, rgb(13 148 136 / 0.12), transparent 55%),
+    linear-gradient(165deg, #eef3f6 0%, #f7f9fb 45%, #e8f0f2 100%);
+}
+
+.skeleton-bone {
+  border-radius: 0.65rem;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--mist) 55%, white) 0%,
+    color-mix(in srgb, var(--accent-soft) 45%, white) 45%,
+    color-mix(in srgb, var(--mist) 55%, white) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.35s ease-in-out infinite;
+}
+
+@keyframes loader-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
 /* Landing — goście */
 .landing {
   min-height: 100dvh;

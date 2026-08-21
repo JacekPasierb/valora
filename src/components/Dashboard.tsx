@@ -7,6 +7,7 @@ import {
   formatMoneyPLN,
   getPortfolioSummary,
 } from "@/lib/transactionStats";
+import {DashboardSkeleton} from "@/components/skeletons";
 import {CryptoSymbol, Transaction} from "@/types/transaction";
 
 type PriceMap = Partial<Record<CryptoSymbol, {pln: number; eur: number}>>;
@@ -114,6 +115,10 @@ export default function Dashboard({transactions}: DashboardProps) {
         Brak transakcji — dodaj zakup lub import, żeby zobaczyć pulpit.
       </div>
     );
+  }
+
+  if (isLoading && !prices) {
+    return <DashboardSkeleton />;
   }
 
   return (

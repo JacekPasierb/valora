@@ -6,6 +6,7 @@ import BrandLogo from "@/components/BrandLogo";
 import Dashboard from "@/components/Dashboard";
 import PurchaseGuide from "@/components/PurchaseGuide";
 import Sidebar, {AppView} from "@/components/Sidebar";
+import {AppLoadingSkeleton} from "@/components/skeletons";
 import TransactionForm from "@/components/TransactionForm";
 import TransactionList from "@/components/TransactionList";
 import {Transaction} from "@/types/transaction";
@@ -260,7 +261,7 @@ export default function HomeApp() {
         onChangeView={handleChangeView}
         historyCount={transactions.length}
       >
-        <p className="text-muted">Ładowanie portfela…</p>
+        <AppLoadingSkeleton />
       </AppChrome>
     );
   }

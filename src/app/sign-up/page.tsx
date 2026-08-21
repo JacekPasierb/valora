@@ -5,6 +5,7 @@ import {signIn} from "next-auth/react";
 import {FormEvent, useState} from "react";
 import {useRouter} from "next/navigation";
 import BrandLogo from "@/components/BrandLogo";
+import {ButtonSpinner} from "@/components/Loader";
 import PasswordField from "@/components/PasswordField";
 import {SECURITY_QUESTIONS} from "@/data/securityQuestions";
 
@@ -172,7 +173,14 @@ export default function SignUpPage() {
             disabled={pending}
             className="w-full rounded-xl bg-accent-strong px-4 py-2.5 font-medium text-white transition hover:opacity-95 disabled:opacity-60"
           >
-            {pending ? "Tworzenie konta…" : "Załóż konto"}
+            {pending ? (
+              <>
+                <ButtonSpinner />
+                Tworzenie konta…
+              </>
+            ) : (
+              "Załóż konto"
+            )}
           </button>
 
           <p className="mt-5 text-center text-sm text-muted">

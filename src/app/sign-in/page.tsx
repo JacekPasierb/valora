@@ -5,6 +5,7 @@ import {signIn} from "next-auth/react";
 import {FormEvent, useState} from "react";
 import {useRouter} from "next/navigation";
 import BrandLogo from "@/components/BrandLogo";
+import {ButtonSpinner} from "@/components/Loader";
 import PasswordField from "@/components/PasswordField";
 
 export default function SignInPage() {
@@ -87,7 +88,14 @@ export default function SignInPage() {
             disabled={pending}
             className="w-full rounded-xl bg-accent-strong px-4 py-2.5 font-medium text-white transition hover:opacity-95 disabled:opacity-60"
           >
-            {pending ? "Logowanie…" : "Zaloguj się"}
+            {pending ? (
+              <>
+                <ButtonSpinner />
+                Logowanie…
+              </>
+            ) : (
+              "Zaloguj się"
+            )}
           </button>
 
           <p className="mt-4 text-center text-sm">

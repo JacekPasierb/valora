@@ -4,6 +4,7 @@ import Link from "next/link";
 import {FormEvent, useState} from "react";
 import {useRouter} from "next/navigation";
 import BrandLogo from "@/components/BrandLogo";
+import {ButtonSpinner} from "@/components/Loader";
 import PasswordField from "@/components/PasswordField";
 
 type Step = "email" | "reset" | "done";
@@ -115,7 +116,14 @@ export default function ForgotPasswordPage() {
                 disabled={pending}
                 className="w-full rounded-xl bg-accent-strong px-4 py-2.5 font-medium text-white transition hover:opacity-95 disabled:opacity-60"
               >
-                {pending ? "Sprawdzam…" : "Dalej"}
+                {pending ? (
+                  <>
+                    <ButtonSpinner />
+                    Sprawdzam…
+                  </>
+                ) : (
+                  "Dalej"
+                )}
               </button>
             </form>
           ) : null}
@@ -155,7 +163,14 @@ export default function ForgotPasswordPage() {
                 disabled={pending}
                 className="w-full rounded-xl bg-accent-strong px-4 py-2.5 font-medium text-white transition hover:opacity-95 disabled:opacity-60"
               >
-                {pending ? "Zapisuję…" : "Ustaw nowe hasło"}
+                {pending ? (
+                  <>
+                    <ButtonSpinner />
+                    Zapisuję…
+                  </>
+                ) : (
+                  "Ustaw nowe hasło"
+                )}
               </button>
             </form>
           ) : null}
