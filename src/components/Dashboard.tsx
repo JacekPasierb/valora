@@ -8,6 +8,10 @@ import {
   formatMoneyPLN,
   getPortfolioSummary,
 } from "@/lib/transactionStats";
+import {
+  formatThresholdLabel,
+  getProfitThresholdStatus,
+} from "@/lib/profitThresholds";
 import {DashboardSkeleton} from "@/components/skeletons";
 import {CryptoSymbol, Transaction} from "@/types/transaction";
 
@@ -456,6 +460,105 @@ export default function Dashboard({transactions}: DashboardProps) {
                   </p>
                 </div>
               </div>
+
+              {(() => {
+                const thresholds = getProfitThresholdStatus(
+                  holding.symbol,
+                  transactions,
+                  holding.profitPercent,
+                  holding.quantity,
+                );
+
+                return (
+                  <div
+                    className={`mt-4 rounded-xl border px-3.5 py-3 sm:px-4 ${
+                      thresholds.suggestionActive
+                        ? "border-accent/40 bg-accent-soft/50"
+                        : "border-line/80 bg-paper/70"
+                    }`}
+                  >
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+                      <MetricLabel tip="Progi realizacji w bieżącym cyklu pozycji: +30%, +50%, +80%, +100%. SELL przy progu oznacza go jako wykorzystany. Nowy BUY po sprzedaży startuje nowy cykl — wtedy +30% znów jest dostępne. Historia wcześniejszych cykli zostaje.">
+                        Progi realizacji
+                      </MetricLabel>
+                    </p>
+
+                    <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                      <div>
+                        <p className="text-[0.65rem] font-semibold uppercase tracking-wide text-muted">
+                          Aktualny wynik
+                        </p>
+                        <p
+                          className={`mono-figure mt-0.5 text-sm font-semibold ${profitClass(holding.profitPercent)}`}
+                        >
+                          {holding.profitPercent != null
+                            ? `${holding.profitPercent >= 0 ? "+" : ""}${holding.profitPercent.toFixed(1)}%`
+                            : "—"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[0.65rem] font-semibold uppercase tracking-wide text-muted">
+                          Ostatnio zrealizowany
+                        </p>
+                        <p className="mono-figure mt-0.5 text-sm font-semibold text-ink">
+                          {thresholds.lastRealizedThreshold != null
+                            ? formatThresholdLabel(
+                                thresholds.lastRealizedThreshold,
+                              )
+                            : "—"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[0.65rem] font-semibold uppercase tracking-wide text-muted">
+                          Następny próg
+                        </p>
+                        <p className="mono-figure mt-0.5 text-sm font-semibold text-ink">
+                          {thresholds.nextThreshold != null
+                            ? formatThresholdLabel(thresholds.nextThreshold)
+                            : "—"}
+                        </p>
+                      </div>
+                    </div>
+
+                    <p
+                      className={`mt-3 text-sm font-medium ${
+                        thresholds.suggestionActive ? "text-accent" : "text-ink"
+                      }`}
+                    >
+                      {thresholds.statusLabel}
+                    </p>
+
+                    {thresholds.suggestionActive &&
+                    thresholds.suggestedSellQuantity != null ? (
+                      <p className="mt-1 text-xs text-muted">
+                        Sugestia (nieautomatyczna): sprzedaj ok.{" "}
+                        <span className="mono-figure font-semibold text-ink">
+                          {formatCryptoQuantity(
+                            thresholds.suggestedSellQuantity,
+                          )}
+                        </span>{" "}
+                        {holding.symbol} (~20% pozycji), potem zapisz sprzedaż w
+                        Valora.
+                      </p>
+                    ) : null}
+
+                    {thresholds.previousCycles.length > 0 ? (
+                      <p className="mt-2 text-xs text-muted">
+                        Historia: {thresholds.previousCycles.length}{" "}
+                        {thresholds.previousCycles.length === 1
+                          ? "wcześniejszy cykl"
+                          : "wcześniejsze cykle"}
+                        {thresholds.previousCycles.map((cycle) => {
+                          const last = cycle.realizedThresholds.at(-1);
+                          return last != null
+                            ? ` · ${cycle.startedAt}: do ${formatThresholdLabel(last)}`
+                            : ` · ${cycle.startedAt}: bez progów`;
+                        })}
+                      </p>
+                    ) : null}
+                  </div>
+                );
+              })()}
             </article>
           ))}
         </div>

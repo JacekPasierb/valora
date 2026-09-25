@@ -378,6 +378,10 @@ export default function PurchaseGuide({onAddTransaction}: PurchaseGuideProps) {
                 title: "Postęp odzyskania",
                 text: "Odzyskane ÷ kapitał własny. Cel: 100% lub więcej. Poniżej — Valora pokazuje, ile jeszcze brakuje.",
               },
+              {
+                title: "Progi realizacji (+30 / +50 / +80 / +100)",
+                text: "W bieżącym cyklu pozycji Valora sugeruje sprzedaż ~20% przy kolejnym progu. Po SELL przy progu oznaczamy go jako wykorzystany — bez ponownej sugestii tego samego. Nowy BUY po sprzedaży startuje nowy cykl (znów od +30%). Historia wcześniejszych cykli zostaje. Sprzedaż nie jest automatyczna.",
+              },
             ].map((item) => (
               <article
                 key={item.title}
