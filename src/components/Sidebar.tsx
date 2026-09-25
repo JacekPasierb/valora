@@ -117,7 +117,7 @@ export default function Sidebar({
                   : "text-white/70"
               }`}
             >
-              Instrukcja zakupu
+              Instrukcja
             </button>
           </div>
 

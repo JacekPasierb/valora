@@ -304,10 +304,10 @@ export default function HomeApp() {
         ) : activeView.type === "guide" ? (
           <>
             <p className="section-label">Poradnik</p>
-            <h1 className="page-title">Instrukcja zakupu</h1>
+            <h1 className="page-title">Instrukcja</h1>
             <p className="page-lead">
-              Krok po kroku: przelew PLN na Revolut, wymiana na EUR, przelew na
-              Kraken i zakup kryptowaluty.
+              Zakup przez Revolut/Kraken, sprzedaż części pozycji przy +30% oraz
+              znaczenie kapitału własnego i puli „Odzyskane”.
             </p>
             <div className="mt-6 sm:mt-8">
               <PurchaseGuide
