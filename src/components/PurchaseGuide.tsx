@@ -51,14 +51,14 @@ const PURCHASE_STEPS = [
   },
 ] as const;
 
-type GuideTab = "purchase" | "sell" | "metrics";
+type GuideTab = "strategy" | "purchase" | "sell" | "metrics";
 
 type PurchaseGuideProps = {
   onAddTransaction?: () => void;
 };
 
 export default function PurchaseGuide({onAddTransaction}: PurchaseGuideProps) {
-  const [tab, setTab] = useState<GuideTab>("purchase");
+  const [tab, setTab] = useState<GuideTab>("strategy");
 
   return (
     <div className="space-y-6">
@@ -68,14 +68,15 @@ export default function PurchaseGuide({onAddTransaction}: PurchaseGuideProps) {
           Zakup, sprzedaż i odzyskanie kapitału
         </h2>
         <p className="mt-3 max-w-3xl text-muted">
-          Jak kupować przez Revolut i Kraken, kiedy sprzedawać część pozycji oraz
-          co oznaczają liczby na pulpicie — w tym pula „Odzyskane”.
+          Pełny opis strategii, ścieżka zakupu, sprzedaż części pozycji oraz
+          znaczenie liczb na pulpicie.
         </p>
       </div>
 
-      <div className="grid grid-cols-3 gap-1 rounded-xl border border-line bg-paper p-1">
+      <div className="grid grid-cols-2 gap-1 rounded-xl border border-line bg-paper p-1 sm:grid-cols-4">
         {(
           [
+            {id: "strategy" as const, label: "Strategia"},
             {id: "purchase" as const, label: "Zakup"},
             {id: "sell" as const, label: "Sprzedaż"},
             {id: "metrics" as const, label: "Liczby"},
@@ -95,6 +96,166 @@ export default function PurchaseGuide({onAddTransaction}: PurchaseGuideProps) {
           </button>
         ))}
       </div>
+
+      {tab === "strategy" ? (
+        <div className="space-y-4">
+          <div className="surface rounded-[1.25rem] p-5 md:p-6">
+            <p className="section-label">W skrócie</p>
+            <h3 className="brand-mark mt-2 text-2xl font-bold text-ink">
+              Budujesz pozycję z wypłaty, sprzedajesz części przy plusach, aż
+              odzyskasz swój wkład
+            </h3>
+            <p className="mt-3 text-sm leading-relaxed text-muted">
+              Valora nie handluje za Ciebie. Pokazuje średnią, % zysku, progi
+              realizacji i pulę „Odzyskane”, żebyś świadomie dokładał i
+              realizował części pozycji na Krakenie.
+            </p>
+          </div>
+
+          <article className="surface rounded-[1.25rem] p-5 md:p-6">
+            <h4 className="brand-mark text-xl font-bold text-ink">
+              1. Miesięczne dokupywanie
+            </h4>
+            <ul className="mt-3 space-y-2 text-sm text-ink">
+              <li className="flex gap-2">
+                <span className="mt-2 size-1.5 shrink-0 rounded-full bg-accent-strong" />
+                <span>
+                  Co miesiąc przeznaczasz stałą kwotę z wypłaty (np. 100 zł) na
+                  krypto przez Revolut → Kraken.
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="mt-2 size-1.5 shrink-0 rounded-full bg-accent-strong" />
+                <span>
+                  Kupujesz, gdy cena jest <strong>poniżej Twojej średniej</strong>.
+                  Gdy jest wyżej — czekasz; w kolejnym miesiącu możesz mieć
+                  większą sumę do dokupienia (100 + 100 itd.).
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="mt-2 size-1.5 shrink-0 rounded-full bg-accent-strong" />
+                <span>
+                  Każdy zakup i import zwiększa <strong>kapitał własny</strong>{" "}
+                  (koszt wszystkich pozycji).
+                </span>
+              </li>
+            </ul>
+          </article>
+
+          <article className="surface rounded-[1.25rem] p-5 md:p-6">
+            <h4 className="brand-mark text-xl font-bold text-ink">
+              2. Częściowa sprzedaż przy plusie
+            </h4>
+            <ul className="mt-3 space-y-2 text-sm text-ink">
+              <li className="flex gap-2">
+                <span className="mt-2 size-1.5 shrink-0 rounded-full bg-accent-strong" />
+                <span>
+                  Gdy wartość pozycji jest ok. <strong>+30%</strong> względem
+                  średniej, sprzedajesz ok. <strong>20%</strong> aktualnej
+                  ilości.
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="mt-2 size-1.5 shrink-0 rounded-full bg-accent-strong" />
+                <span>
+                  Reszta zostaje na rynku. Średnia zakupu pozostałej części{" "}
+                  <strong>nie zmienia się</strong> — % na reszcie nadal może być
+                  ok. +30%.
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="mt-2 size-1.5 shrink-0 rounded-full bg-accent-strong" />
+                <span>
+                  EUR ze sprzedaży zostaje na Krakenie. Valora dolicza pełne
+                  netto (PLN) do puli <strong>Odzyskane</strong> — to nie jest
+                  to samo co zysk zrealizowany.
+                </span>
+              </li>
+            </ul>
+          </article>
+
+          <article className="surface rounded-[1.25rem] p-5 md:p-6">
+            <h4 className="brand-mark text-xl font-bold text-ink">
+              3. Progi w cyklu: +30% → +50% → +80% → +100%
+            </h4>
+            <ul className="mt-3 space-y-2 text-sm text-ink">
+              <li className="flex gap-2">
+                <span className="mt-2 size-1.5 shrink-0 rounded-full bg-accent-strong" />
+                <span>
+                  Po sprzedaży przy +30% Valora oznacza ten próg jako
+                  wykorzystany. Nie sugeruje go ponownie w tym samym cyklu.
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="mt-2 size-1.5 shrink-0 rounded-full bg-accent-strong" />
+                <span>
+                  Następne sugestie w tym cyklu: <strong>+50%</strong>, potem{" "}
+                  <strong>+80%</strong>, potem <strong>+100%</strong> — zawsze
+                  ok. 20% aktualnej pozycji (tylko informacja, bez automatu).
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="mt-2 size-1.5 shrink-0 rounded-full bg-accent-strong" />
+                <span>
+                  <strong>Nowy BUY po wcześniejszym SELL</strong> startuje nowy
+                  cykl — znów od +30%. Sam spadek ceny albo sama sprzedaż bez
+                  dokupienia cyklu nie resetuje.
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="mt-2 size-1.5 shrink-0 rounded-full bg-accent-strong" />
+                <span>
+                  Historia progów z poprzednich cykli zostaje na karcie monety.
+                </span>
+              </li>
+            </ul>
+          </article>
+
+          <article className="surface rounded-[1.25rem] p-5 md:p-6">
+            <h4 className="brand-mark text-xl font-bold text-ink">
+              4. Cel: odzyskać siebie z gry
+            </h4>
+            <ul className="mt-3 space-y-2 text-sm text-ink">
+              <li className="flex gap-2">
+                <span className="mt-2 size-1.5 shrink-0 rounded-full bg-accent-strong" />
+                <span>
+                  <strong>Kapitał własny</strong> = ile łącznie włożyłeś w
+                  pozycje (zakupy + importy).
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="mt-2 size-1.5 shrink-0 rounded-full bg-accent-strong" />
+                <span>
+                  <strong>Odzyskane</strong> = suma netto ze sprzedaży (EUR na
+                  giełdzie → PLN w Valorze).
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="mt-2 size-1.5 shrink-0 rounded-full bg-accent-strong" />
+                <span>
+                  Gdy odzyskane ≥ kapitał własny: możesz wypłacić swój wkład na
+                  konto, a nadwyżką dalej grać na Krakenie. Valora na razie tylko
+                  pokazuje ten moment — bez automatycznych wypłat.
+                </span>
+              </li>
+            </ul>
+            <p className="mt-4 rounded-xl border border-line bg-paper px-4 py-3 text-sm text-muted">
+              <span className="font-semibold text-accent">Przykład celu: </span>
+              kapitał własny 4000 zł, odzyskane 4500 zł → do wypłaty 4000 zł,
+              nadwyżka 500 zł zostaje w grze.
+            </p>
+          </article>
+
+          <div className="rounded-xl border border-accent/25 bg-accent-soft/40 px-4 py-3 text-sm text-ink">
+            <p className="font-semibold text-accent">Złota zasada</p>
+            <p className="mt-1 text-muted">
+              Odzyskane ≠ zysk. Sprzedaż za 77 zł netto dodaje{" "}
+              <strong className="text-ink">77 zł</strong> do odzyskanych; zysk
+              zrealizowany to osobno np. 17 zł (77 − 60 kosztu części).
+            </p>
+          </div>
+        </div>
+      ) : null}
 
       {tab === "purchase" ? (
         <>
@@ -166,7 +327,7 @@ export default function PurchaseGuide({onAddTransaction}: PurchaseGuideProps) {
       {tab === "sell" ? (
         <div className="space-y-4">
           <div className="surface rounded-[1.25rem] p-5 md:p-6">
-            <p className="section-label">Strategia</p>
+            <p className="section-label">Krok po kroku</p>
             <h3 className="brand-mark mt-2 text-2xl font-bold text-ink">
               +30% → sprzedajesz ~20% pozycji
             </h3>
@@ -413,9 +574,11 @@ export default function PurchaseGuide({onAddTransaction}: PurchaseGuideProps) {
         <div>
           <p className="brand-mark text-xl font-bold text-ink">Gotowe?</p>
           <p className="mt-1 text-sm text-muted">
-            {tab === "sell"
-              ? "Dodaj sprzedaż z danymi z Krakena."
-              : "Dodaj zakup, import albo sprzedaż."}
+            {tab === "strategy"
+              ? "Przejrzyj pulpit albo dodaj pierwszą transakcję."
+              : tab === "sell"
+                ? "Dodaj sprzedaż z danymi z Krakena."
+                : "Dodaj zakup, import albo sprzedaż."}
           </p>
         </div>
         {onAddTransaction && (

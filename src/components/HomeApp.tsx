@@ -306,8 +306,8 @@ export default function HomeApp() {
             <p className="section-label">Poradnik</p>
             <h1 className="page-title">Instrukcja</h1>
             <p className="page-lead">
-              Zakup przez Revolut/Kraken, sprzedaż części pozycji przy +30% oraz
-              znaczenie kapitału własnego i puli „Odzyskane”.
+              Cała strategia, zakup przez Revolut/Kraken, sprzedaż części pozycji
+              oraz znaczenie kapitału własnego, odzyskanych i progów.
             </p>
             <div className="mt-6 sm:mt-8">
               <PurchaseGuide
