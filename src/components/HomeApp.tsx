@@ -186,10 +186,16 @@ export default function HomeApp() {
 
     setTransactions((prev) => {
       const already = prev.some((item) => item.id === saved.id);
-      if (already) {
-        return prev.map((item) => (item.id === saved.id ? saved : item));
-      }
-      return [...prev, saved];
+      const next = already
+        ? prev.map((item) => (item.id === saved.id ? saved : item))
+        : [saved, ...prev];
+      return [...next].sort((a, b) => {
+        const byDate = b.date.localeCompare(a.date);
+        if (byDate !== 0) {
+          return byDate;
+        }
+        return b.id.localeCompare(a.id);
+      });
     });
 
     setEditingTransaction(null);
@@ -337,12 +343,13 @@ export default function HomeApp() {
             <p className="page-lead">
               {editingTransaction
                 ? "Popraw dane i zapisz zmiany."
-                : "Zakup przez Revolut/Kraken albo import z innej giełdy. Po zapisie wrócisz do historii."}
+                : "Zakup, import albo sprzedaż na Krakenie. Po zapisie wrócisz do historii."}
             </p>
             <div className="mt-6 sm:mt-8">
               <TransactionForm
                 key={editingTransaction?.id ?? "new"}
                 initialTransaction={editingTransaction}
+                transactions={transactions}
                 onSaveTransaction={saveTransaction}
                 onCancelEdit={editingTransaction ? cancelEdit : undefined}
               />

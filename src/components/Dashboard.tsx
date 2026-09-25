@@ -1,6 +1,7 @@
 "use client";
 
 import {useEffect, useRef, useState} from "react";
+import {MetricLabel} from "@/components/InfoTip";
 import {
   formatCryptoQuantity,
   formatMoneyEUR,
@@ -108,6 +109,7 @@ export default function Dashboard({transactions}: DashboardProps) {
   }, []);
 
   const summary = getPortfolioSummary(transactions, prices, eurPlnRate);
+  const {capital} = summary;
 
   if (transactions.length === 0) {
     return (
@@ -182,7 +184,11 @@ export default function Dashboard({transactions}: DashboardProps) {
 
       <section className="surface-strong relative overflow-hidden rounded-[1.25rem] p-5 sm:rounded-[1.5rem] sm:p-7 md:p-9">
         <div className="pointer-events-none absolute -right-16 -top-20 size-56 rounded-full bg-accent-soft/80 blur-3xl" />
-        <p className="section-label relative">Cały portfel</p>
+        <p className="section-label relative">
+          <MetricLabel tip="Aktualna wartość rynkowa wszystkich kryptowalut, które nadal trzymasz (ilość × cena live), w PLN i EUR.">
+            Cały portfel
+          </MetricLabel>
+        </p>
         <p className="mono-figure relative mt-3 text-4xl font-semibold tracking-tight text-ink sm:mt-4 sm:text-5xl md:text-6xl">
           {summary.totalValuePLN != null
             ? formatMoneyPLN(summary.totalValuePLN)
@@ -199,7 +205,9 @@ export default function Dashboard({transactions}: DashboardProps) {
         <div className="relative mt-6 grid gap-4 border-t border-line pt-5 sm:mt-8 sm:grid-cols-3 sm:gap-6 sm:pt-6">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-muted">
-              Koszt zakupu
+              <MetricLabel tip="Ile kosztowała część kryptowalut, którą nadal posiadasz. Po sprzedaży spada proporcjonalnie (odejmowany jest koszt sprzedanej części), a średnia zakupu zostaje ta sama.">
+                Koszt pozostałej pozycji
+              </MetricLabel>
             </p>
             <p className="mono-figure mt-2 text-lg font-semibold text-ink sm:text-xl">
               {formatMoneyPLN(summary.totalCostPLN)}
@@ -207,29 +215,137 @@ export default function Dashboard({transactions}: DashboardProps) {
           </div>
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-muted">
-              Zysk / strata
+              <MetricLabel tip="Różnica między aktualną wartością rynkową a kosztem pozostałej pozycji. To zysk lub strata „na papierze” — jeszcze niezrealizowane sprzedażą.">
+                Zysk niezrealizowany
+              </MetricLabel>
             </p>
             <p
-              className={`mono-figure mt-2 text-lg font-semibold sm:text-xl ${profitClass(summary.totalProfitPLN)}`}
+              className={`mono-figure mt-2 text-lg font-semibold sm:text-xl ${profitClass(summary.unrealizedProfitPLN)}`}
             >
-              {summary.totalProfitPLN != null
-                ? `${summary.totalProfitPLN >= 0 ? "+" : ""}${formatMoneyPLN(summary.totalProfitPLN)}`
+              {summary.unrealizedProfitPLN != null
+                ? `${summary.unrealizedProfitPLN >= 0 ? "+" : ""}${formatMoneyPLN(summary.unrealizedProfitPLN)}`
                 : "—"}
             </p>
           </div>
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-muted">
-              Zmiana vs koszt
+              <MetricLabel tip="Procentowa zmiana wartości pozostałej pozycji względem jej kosztu. Przy strategii +30% patrzysz właśnie na ten wskaźnik przed sprzedażą części pozycji.">
+                Zmiana vs koszt pozycji
+              </MetricLabel>
             </p>
             <p
-              className={`mono-figure mt-2 text-lg font-semibold sm:text-xl ${profitClass(summary.totalProfitPLN)}`}
+              className={`mono-figure mt-2 text-lg font-semibold sm:text-xl ${profitClass(summary.unrealizedProfitPLN)}`}
             >
-              {summary.totalProfitPercent != null
-                ? `${summary.totalProfitPercent >= 0 ? "+" : ""}${summary.totalProfitPercent.toFixed(2)}%`
+              {summary.unrealizedProfitPercent != null
+                ? `${summary.unrealizedProfitPercent >= 0 ? "+" : ""}${summary.unrealizedProfitPercent.toFixed(2)}%`
                 : "—"}
             </p>
           </div>
         </div>
+      </section>
+
+      <section className="surface rounded-[1.25rem] border-2 border-line p-5 sm:p-6 md:p-7">
+        <p className="section-label">Strategia — odzyskanie kapitału</p>
+        <p className="mt-2 max-w-2xl text-sm text-muted">
+          Cel: zebrać w puli „Odzyskane” co najmniej tyle, ile wyniósł koszt
+          wszystkich pozycji. Środki ze sprzedaży zostają na Krakenie w EUR.
+        </p>
+
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+              <MetricLabel tip="Suma kosztów wszystkich zakupów i importów — ile łącznie włożyłeś w pozycje. Nie maleje przy sprzedaży; to Twój punkt odniesienia do odzyskania kapitału.">
+                Kapitał własny
+              </MetricLabel>
+            </p>
+            <p className="mono-figure mt-2 text-xl font-semibold text-ink">
+              {formatMoneyPLN(capital.ownCapitalPLN)}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+              <MetricLabel tip="Pełna kwota netto ze wszystkich sprzedaży, przeliczona na PLN. To NIE jest zysk — np. sprzedaż za 77 zł netto dodaje 77 zł do odzyskanych, nawet jeśli zysk wyniósł tylko 17 zł. EUR nadal leży na Krakenie.">
+                Odzyskane
+              </MetricLabel>
+            </p>
+            <p className="mono-figure mt-2 text-xl font-semibold text-accent">
+              {formatMoneyPLN(capital.recoveredPLN)}
+            </p>
+            <p className="mono-figure mt-1 text-xs text-muted">
+              {capital.recoveredEUR > 0
+                ? formatMoneyEUR(capital.recoveredEUR)
+                : "€0.00"}{" "}
+              na Krakenie
+            </p>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+              <MetricLabel tip="Zysk z zamkniętych części pozycji: kwota netto ze sprzedaży minus koszt sprzedanej części. Osobna wartość od „Odzyskanych”.">
+                Zysk zrealizowany
+              </MetricLabel>
+            </p>
+            <p
+              className={`mono-figure mt-2 text-xl font-semibold ${profitClass(capital.realizedProfitPLN)}`}
+            >
+              {capital.realizedProfitPLN >= 0 ? "+" : ""}
+              {formatMoneyPLN(capital.realizedProfitPLN)}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+              <MetricLabel tip="Jaką część kapitału własnego już pokryły odzyskane środki (odzyskane ÷ kapitał własny). Cel: 100% lub więcej.">
+                Postęp odzyskania
+              </MetricLabel>
+            </p>
+            <p className="mono-figure mt-2 text-xl font-semibold text-ink">
+              {capital.ownCapitalPLN > 0
+                ? `${Math.min(capital.progressPercent, 999).toFixed(1)}%`
+                : "—"}
+            </p>
+            <div className="mt-2 h-2 overflow-hidden rounded-full bg-mist">
+              <div
+                className={`h-full rounded-full transition-all ${
+                  capital.goalReached ? "bg-gain" : "bg-accent-strong"
+                }`}
+                style={{
+                  width: `${Math.min(100, Math.max(0, capital.progressPercent))}%`,
+                }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {capital.goalReached ? (
+          <div className="mt-6 rounded-xl border border-gain/30 bg-emerald-50 px-4 py-3 text-sm text-ink">
+            <p className="font-semibold text-gain">
+              <MetricLabel tip="Odzyskane pokryły lub przekroczyły kapitał własny. Kwota do wypłaty to Twój wkład; nadwyżka to środki ponad wkład — Valora na razie tylko to pokazuje, bez wypłat bankowych.">
+                Cel osiągnięty
+              </MetricLabel>
+            </p>
+            <p className="mt-1 text-muted">
+              Możesz wypłacić swój wkład{" "}
+              <span className="mono-figure font-semibold text-ink">
+                {formatMoneyPLN(capital.capitalToWithdrawPLN)}
+              </span>
+              . Nadwyżka do dalszego inwestowania:{" "}
+              <span className="mono-figure font-semibold text-ink">
+                {formatMoneyPLN(capital.surplusPLN)}
+              </span>
+              . Valora nie prowadzi jeszcze wypłat bankowych — to tylko
+              informacja.
+            </p>
+          </div>
+        ) : (
+          <p className="mt-6 text-sm text-muted">
+            <MetricLabel tip="Różnica między kapitałem własnym a odzyskanymi — ile netto ze sprzedaży jeszcze potrzebujesz, żeby pokryć cały wkład w pozycje.">
+              Brakuje do celu
+            </MetricLabel>
+            :{" "}
+            <span className="mono-figure font-semibold text-ink">
+              {formatMoneyPLN(capital.remainingToGoalPLN)}
+            </span>
+          </p>
+        )}
       </section>
 
       <section className="space-y-4">
@@ -257,8 +373,12 @@ export default function Dashboard({transactions}: DashboardProps) {
                   </p>
                 </div>
                 <div className="w-full text-left sm:w-auto sm:text-right">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted">
-                    Aktualna wartość
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted sm:justify-end">
+                    <span className="inline-flex items-center gap-1 sm:justify-end">
+                      <MetricLabel tip="Ile jest warta ta kryptowaluta teraz: posiadana ilość × aktualna cena rynkowa.">
+                        Aktualna wartość
+                      </MetricLabel>
+                    </span>
                   </p>
                   <p className="mono-figure mt-1 text-2xl font-semibold text-ink sm:text-3xl">
                     {holding.currentValuePLN != null
@@ -278,7 +398,9 @@ export default function Dashboard({transactions}: DashboardProps) {
               <div className="mt-5 grid grid-cols-2 gap-3 border-t border-line/80 pt-4 sm:mt-6 sm:gap-4 sm:pt-5 lg:grid-cols-4">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted">
-                    Średnia zakupu
+                    <MetricLabel tip="Średnia ważona cena zakupu pozostałej ilości. Po częściowej sprzedaży nie powinna się zmieniać — spada ilość i koszt proporcjonalnie.">
+                      Średnia zakupu
+                    </MetricLabel>
                   </p>
                   <p className="mono-figure mt-1.5 text-sm font-semibold text-ink sm:text-base">
                     {holding.averagePLN != null
@@ -288,7 +410,9 @@ export default function Dashboard({transactions}: DashboardProps) {
                 </div>
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted">
-                    Cena rynkowa
+                    <MetricLabel tip="Aktualna cena rynkowa za 1 sztukę (live), w PLN i EUR.">
+                      Cena rynkowa
+                    </MetricLabel>
                   </p>
                   <p className="mono-figure mt-1.5 text-sm font-semibold text-ink sm:text-base">
                     {holding.currentPricePLN != null
@@ -303,7 +427,9 @@ export default function Dashboard({transactions}: DashboardProps) {
                 </div>
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted">
-                    Koszt łącznie
+                    <MetricLabel tip="Koszt pozostałej ilości tej monety (po odjęciu kosztu sprzedanych części).">
+                      Koszt pozycji
+                    </MetricLabel>
                   </p>
                   <p className="mono-figure mt-1.5 text-sm font-semibold text-ink sm:text-base">
                     {formatMoneyPLN(holding.costPLN)}
@@ -311,7 +437,9 @@ export default function Dashboard({transactions}: DashboardProps) {
                 </div>
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted">
-                    Zysk / strata
+                    <MetricLabel tip="Aktualna wartość minus koszt pozycji. Procent pokazuje, o ile jesteś powyżej lub poniżej swojej średniej — tu celujesz w ok. +30% przed sprzedażą 20%.">
+                      Zysk niezrealizowany
+                    </MetricLabel>
                   </p>
                   <p
                     className={`mono-figure mt-1.5 text-sm font-semibold sm:text-base ${profitClass(holding.profitPLN)}`}

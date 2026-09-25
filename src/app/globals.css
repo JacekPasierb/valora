@@ -433,6 +433,13 @@ body.menu-open {
   color: var(--muted);
   border-bottom: 1px solid var(--line);
   background: color-mix(in srgb, var(--paper) 80%, white);
+  position: relative;
+  overflow: visible;
+}
+
+.data-table thead {
+  position: relative;
+  z-index: 2;
 }
 
 .data-table td {
@@ -523,6 +530,8 @@ body.menu-open {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
+  display: inline-flex;
+  align-items: center;
 }
 
 .fx-chip-left {
@@ -1063,6 +1072,94 @@ body.menu-open {
   .auth-screen-brand {
     margin-bottom: 1.75rem;
   }
+}
+
+.metric-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.info-tip {
+  position: relative;
+  display: inline-flex;
+  vertical-align: middle;
+}
+
+.info-tip-btn {
+  display: inline-flex;
+  width: 1.05rem;
+  height: 1.05rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--muted) 45%, transparent);
+  background: color-mix(in srgb, white 70%, var(--mist));
+  color: var(--muted);
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0;
+  cursor: help;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.info-tip-btn:hover,
+.info-tip-btn:focus-visible,
+.info-tip:focus-within .info-tip-btn {
+  color: var(--ink);
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  outline: none;
+}
+
+.info-tip-bubble {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 0.55rem);
+  z-index: 40;
+  width: max-content;
+  max-width: min(16.5rem, 70vw);
+  transform: translateX(-50%) translateY(4px);
+  padding: 0.65rem 0.75rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--line);
+  background: var(--ink);
+  color: #f3f6f8;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.45;
+  letter-spacing: 0;
+  text-transform: none;
+  text-align: left;
+  box-shadow: 0 10px 28px rgb(7 17 31 / 0.18);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease,
+    visibility 0.15s ease;
+}
+
+.info-tip-bubble::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -6px;
+  border: 6px solid transparent;
+  border-top-color: var(--ink);
+}
+
+.info-tip:hover .info-tip-bubble,
+.info-tip:focus-within .info-tip-bubble {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
 }
 
 @keyframes landing-rise {

@@ -33,11 +33,15 @@ export async function PUT(request: Request, context: RouteContext) {
     }
 
     const fields = pickTransactionFields({...body, id});
+    const isSell = fields.side === "sell";
     await connectDB();
 
     const doc = await TransactionModel.findOneAndUpdate(
       {userId, id},
-      {$set: {...fields, userId, id}},
+      {
+        $set: {...fields, userId, id},
+        ...(isSell ? {$unset: {source: ""}} : {}),
+      },
       {new: true},
     ).lean();
 

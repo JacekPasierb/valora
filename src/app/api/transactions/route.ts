@@ -77,11 +77,15 @@ export async function POST(request: Request) {
 
     const id = body.id ?? crypto.randomUUID();
     const fields = pickTransactionFields({...body, id});
+    const isSell = fields.side === "sell";
 
     await connectDB();
     const doc = await TransactionModel.findOneAndUpdate(
       {userId, id},
-      {$set: {...fields, userId, id}},
+      {
+        $set: {...fields, userId, id},
+        ...(isSell ? {$unset: {source: ""}} : {}),
+      },
       {upsert: true, new: true, setDefaultsOnInsert: true},
     ).lean();
 

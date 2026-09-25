@@ -1,15 +1,29 @@
 "use client";
 
-import {FormEvent, useState} from "react";
+import {FormEvent, useMemo, useState} from "react";
 import {CRYPTO_OPTIONS} from "@/data/cryptos";
 import {fetchNbpEurRate} from "@/lib/nbp";
-import {CryptoSymbol, Transaction, TransactionSource} from "@/types/transaction";
+import {
+  formatCryptoQuantity,
+  formatMoneyEUR,
+  formatMoneyPLN,
+  getAvailableQuantity,
+  getHoldingsStats,
+} from "@/lib/transactionStats";
+import {
+  CryptoSymbol,
+  Transaction,
+  TransactionSource,
+} from "@/types/transaction";
 
 type TransactionFormProps = {
   initialTransaction?: Transaction | null;
+  transactions?: Transaction[];
   onSaveTransaction: (transaction: Transaction) => void | Promise<void>;
   onCancelEdit?: () => void;
 };
+
+type EntryMode = TransactionSource | "sell";
 
 const inputClassName = "field-input placeholder:text-muted";
 
@@ -59,7 +73,6 @@ function calcQuantity(eur: string, price: string): string {
     return "";
   }
 
-  // Kraken podaje volume = koszt / cena; prowizja jest osobno i nie pomniejsza quantity
   return formatQuantity(eurNumber / priceNumber);
 }
 
@@ -125,7 +138,7 @@ function hasValue(value: string): boolean {
 type AvgPriceCurrency = "EUR" | "PLN";
 
 type FormValues = {
-  entryMode: TransactionSource;
+  entryMode: EntryMode;
   avgPriceCurrency: AvgPriceCurrency;
   cryptoSymbol: CryptoSymbol;
   date: string;
@@ -136,11 +149,10 @@ type FormValues = {
   avgPrice: string;
   quantity: string;
   feeEUR: string;
+  netSaleEUR: string;
 };
 
-function getInitialFormValues(
-  transaction?: Transaction | null,
-): FormValues {
+function getInitialFormValues(transaction?: Transaction | null): FormValues {
   if (!transaction) {
     return {
       entryMode: "purchase",
@@ -154,6 +166,30 @@ function getInitialFormValues(
       avgPrice: "",
       quantity: "",
       feeEUR: "",
+      netSaleEUR: "",
+    };
+  }
+
+  if (transaction.side === "sell") {
+    return {
+      entryMode: "sell",
+      avgPriceCurrency: "EUR",
+      cryptoSymbol: transaction.crypto,
+      date: transaction.date,
+      investedPLN: "",
+      eurRate: transaction.eurRate > 0 ? formatRate(transaction.eurRate) : "",
+      investedEUR: "",
+      cryptoPriceEUR:
+        transaction.cryptoPriceEUR > 0
+          ? String(transaction.cryptoPriceEUR)
+          : "",
+      avgPrice: "",
+      quantity: String(transaction.quantity),
+      feeEUR: transaction.feeEUR > 0 ? String(transaction.feeEUR) : "",
+      netSaleEUR:
+        transaction.netSaleEUR != null
+          ? formatMoney(transaction.netSaleEUR)
+          : "",
     };
   }
 
@@ -184,18 +220,20 @@ function getInitialFormValues(
         : "",
     quantity: String(transaction.quantity),
     feeEUR: transaction.feeEUR > 0 ? String(transaction.feeEUR) : "",
+    netSaleEUR: "",
   };
 }
 
 export default function TransactionForm({
   initialTransaction = null,
+  transactions = [],
   onSaveTransaction,
   onCancelEdit,
 }: TransactionFormProps) {
   const isEditing = initialTransaction != null;
   const initialValues = getInitialFormValues(initialTransaction);
 
-  const [entryMode, setEntryMode] = useState<TransactionSource>(
+  const [entryMode, setEntryMode] = useState<EntryMode>(
     initialValues.entryMode,
   );
   const [avgPriceCurrency, setAvgPriceCurrency] = useState<AvgPriceCurrency>(
@@ -214,9 +252,75 @@ export default function TransactionForm({
   const [avgPrice, setAvgPrice] = useState(initialValues.avgPrice);
   const [quantity, setQuantity] = useState(initialValues.quantity);
   const [feeEUR, setFeeEUR] = useState(initialValues.feeEUR);
+  const [netSaleEUR, setNetSaleEUR] = useState(initialValues.netSaleEUR);
   const [isFetchingNbpRate, setIsFetchingNbpRate] = useState(false);
   const [nbpRateInfo, setNbpRateInfo] = useState("");
   const [nbpRateError, setNbpRateError] = useState("");
+  const [formError, setFormError] = useState("");
+
+  const availableQuantity = useMemo(
+    () =>
+      getAvailableQuantity(
+        transactions,
+        cryptoSymbol,
+        initialTransaction?.id,
+      ),
+    [transactions, cryptoSymbol, initialTransaction?.id],
+  );
+
+  const positionStats = useMemo(() => {
+    const relevant = transactions.filter(
+      (transaction) =>
+        transaction.crypto === cryptoSymbol &&
+        transaction.id !== initialTransaction?.id,
+    );
+    return getHoldingsStats(relevant);
+  }, [transactions, cryptoSymbol, initialTransaction?.id]);
+
+  const sellPreview = useMemo(() => {
+    const qty = toNumber(quantity);
+    const price = toNumber(cryptoPriceEUR);
+    const fee = toNumber(feeEUR) || 0;
+    const rate = toNumber(eurRate);
+    const gross = qty > 0 && price > 0 ? qty * price : 0;
+    const net =
+      toNumber(netSaleEUR) > 0
+        ? toNumber(netSaleEUR)
+        : gross > 0
+          ? Math.max(0, gross - fee)
+          : 0;
+    const netPln = rate > 0 && net > 0 ? net * rate : 0;
+    const avgPln = positionStats.averagePLN;
+    const avgEur = positionStats.averageEUR;
+    const costSoldPln =
+      qty > 0 && avgPln != null ? qty * avgPln : 0;
+    const costSoldEur =
+      qty > 0 && avgEur != null
+        ? qty * avgEur
+        : rate > 0 && costSoldPln > 0
+          ? costSoldPln / rate
+          : 0;
+    const realized = netPln - costSoldPln;
+
+    return {
+      gross,
+      net,
+      netPln,
+      costSoldPln,
+      costSoldEur,
+      realized,
+      avgPln,
+      avgEur,
+    };
+  }, [
+    quantity,
+    cryptoPriceEUR,
+    feeEUR,
+    eurRate,
+    netSaleEUR,
+    positionStats.averagePLN,
+    positionStats.averageEUR,
+  ]);
 
   const applyFromPln = (pln: string, rate: string, price: string) => {
     const nextEur = calcEur(pln, rate);
@@ -334,6 +438,15 @@ export default function TransactionForm({
     }
   };
 
+  const syncSellNetFromGross = (qty: string, price: string, fee: string) => {
+    const qtyN = toNumber(qty);
+    const priceN = toNumber(price);
+    const feeN = toNumber(fee) || 0;
+    if (qtyN > 0 && priceN > 0) {
+      setNetSaleEUR(formatMoney(Math.max(0, qtyN * priceN - feeN)));
+    }
+  };
+
   const resetForm = () => {
     setCryptoSymbol("XRP");
     setDate("");
@@ -344,8 +457,10 @@ export default function TransactionForm({
     setAvgPrice("");
     setQuantity("");
     setFeeEUR("");
+    setNetSaleEUR("");
     setNbpRateInfo("");
     setNbpRateError("");
+    setFormError("");
   };
 
   const handleFetchNbpRate = async () => {
@@ -362,7 +477,9 @@ export default function TransactionForm({
       const result = await fetchNbpEurRate(date);
       const nextRate = formatRate(result.rate);
       setEurRate(nextRate);
-      syncImportedEurFromPln(investedPLN, avgPrice, nextRate);
+      if (entryMode === "imported") {
+        syncImportedEurFromPln(investedPLN, avgPrice, nextRate);
+      }
       setNbpRateInfo(
         `Kurs NBP z ${result.effectiveDate}: ${nextRate} zł (średni)`,
       );
@@ -379,12 +496,70 @@ export default function TransactionForm({
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setFormError("");
+
+    const quantityNumber = toNumber(quantity);
+    const eurRateNumber = toNumber(eurRate) || 0;
+
+    if (entryMode === "sell") {
+      if (!(quantityNumber > 0)) {
+        setFormError("Podaj ilość sprzedawanej kryptowaluty.");
+        return;
+      }
+      if (quantityNumber > availableQuantity + 1e-12) {
+        setFormError(
+          `Nie możesz sprzedać więcej niż posiadasz (${formatCryptoQuantity(availableQuantity)}).`,
+        );
+        return;
+      }
+      if (!(sellPreview.avgPln != null && sellPreview.avgPln > 0)) {
+        setFormError("Brak średniej zakupu dla tej pozycji — nie da się sprzedać.");
+        return;
+      }
+      if (!(sellPreview.net > 0) || !(eurRateNumber > 0)) {
+        setFormError("Podaj cenę/netto sprzedaży oraz kurs EUR.");
+        return;
+      }
+
+      const sellPriceEUR = toNumber(cryptoPriceEUR);
+      const costSoldPLN = Number(sellPreview.costSoldPln.toFixed(2));
+      const costSoldEUR = Number(sellPreview.costSoldEur.toFixed(2));
+      const netSaleEURNumber = Number(sellPreview.net.toFixed(2));
+      const netSalePLNNumber = Number(sellPreview.netPln.toFixed(2));
+      const realizedProfitPLN = Number(
+        (netSalePLNNumber - costSoldPLN).toFixed(2),
+      );
+
+      const newTransaction: Transaction = {
+        id: initialTransaction?.id ?? crypto.randomUUID(),
+        crypto: cryptoSymbol,
+        date,
+        investedPLN: costSoldPLN,
+        eurRate: eurRateNumber,
+        investedEUR: costSoldEUR,
+        cryptoPriceEUR: sellPriceEUR,
+        quantity: quantityNumber,
+        feeEUR: toNumber(feeEUR) || 0,
+        side: "sell",
+        cryptoPricePLN:
+          sellPriceEUR > 0 && eurRateNumber > 0
+            ? Number((sellPriceEUR * eurRateNumber).toFixed(8))
+            : undefined,
+        netSaleEUR: netSaleEURNumber,
+        netSalePLN: netSalePLNNumber,
+        realizedProfitPLN,
+      };
+
+      await onSaveTransaction(newTransaction);
+      if (!isEditing) {
+        resetForm();
+      }
+      return;
+    }
 
     const isImported = entryMode === "imported";
-    const quantityNumber = toNumber(quantity);
     const investedPLNNumber = toNumber(investedPLN);
     const investedEURNumber = toNumber(investedEUR) || 0;
-    const eurRateNumber = toNumber(eurRate) || 0;
     const cryptoPriceEURNumber = toNumber(cryptoPriceEUR) || 0;
 
     const cryptoPricePLNNumber =
@@ -416,6 +591,7 @@ export default function TransactionForm({
       quantity: quantityNumber,
       feeEUR: isImported ? 0 : toNumber(feeEUR),
       source: entryMode,
+      side: "buy",
       cryptoPricePLN: cryptoPricePLNNumber > 0 ? cryptoPricePLNNumber : undefined,
     };
 
@@ -423,6 +599,11 @@ export default function TransactionForm({
     if (!isEditing) {
       resetForm();
     }
+  };
+
+  const switchMode = (mode: EntryMode) => {
+    setEntryMode(mode);
+    resetForm();
   };
 
   return (
@@ -434,42 +615,55 @@ export default function TransactionForm({
         {isEditing ? "Edytuj transakcję" : "Dodaj transakcję"}
       </h2>
 
-      <div className="mb-6 grid grid-cols-2 gap-1 rounded-xl border border-line bg-paper p-1">
+      <div className="mb-6 grid grid-cols-3 gap-1 rounded-xl border border-line bg-paper p-1">
         <button
           type="button"
-          onClick={() => {
-            setEntryMode("purchase");
-            resetForm();
-          }}
-          className={`rounded-lg px-3 py-2.5 text-sm font-semibold transition ${
+          onClick={() => switchMode("purchase")}
+          className={`rounded-lg px-2 py-2.5 text-xs font-semibold transition sm:text-sm ${
             entryMode === "purchase"
               ? "bg-ink text-white"
               : "text-muted hover:text-ink"
           }`}
         >
-          Zakup (Revolut → Kraken)
+          Zakup
         </button>
         <button
           type="button"
-          onClick={() => {
-            setEntryMode("imported");
-            resetForm();
-          }}
-          className={`rounded-lg px-3 py-2.5 text-sm font-semibold transition ${
+          onClick={() => switchMode("imported")}
+          className={`rounded-lg px-2 py-2.5 text-xs font-semibold transition sm:text-sm ${
             entryMode === "imported"
               ? "bg-ink text-white"
               : "text-muted hover:text-ink"
           }`}
         >
-          Przeniesione z giełdy
+          Import
+        </button>
+        <button
+          type="button"
+          onClick={() => switchMode("sell")}
+          className={`rounded-lg px-2 py-2.5 text-xs font-semibold transition sm:text-sm ${
+            entryMode === "sell"
+              ? "bg-ink text-white"
+              : "text-muted hover:text-ink"
+          }`}
+        >
+          Sprzedaż
         </button>
       </div>
 
       <p className="mb-6 text-sm text-muted">
         {entryMode === "purchase"
-          ? "Pełny przebieg: Revolut (PLN → EUR) → Kraken → zakup"
-          : "Gdy nie pamiętasz opłat — wpisz ilość, całkowity koszt i średnią cenę"}
+          ? "Revolut (PLN → EUR) → Kraken → zakup. Liczy się do kapitału własnego (koszt pozycji)."
+          : entryMode === "imported"
+            ? "Import z innej giełdy — wchodzi w średnią i w kapitał własny (koszt pozycji)."
+            : "Sprzedaż na Krakenie w EUR. Netto zostaje na giełdzie i zasila pulę „Odzyskane” (PLN)."}
       </p>
+
+      {formError ? (
+        <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+          {formError}
+        </p>
+      ) : null}
 
       <div className="space-y-8">
         <section className="space-y-4">
@@ -479,7 +673,11 @@ export default function TransactionForm({
 
           <div>
             <label className="mb-2 block text-sm font-medium text-ink">
-              {entryMode === "purchase" ? "Data zakupu" : "Data przeniesienia"}
+              {entryMode === "sell"
+                ? "Data sprzedaży"
+                : entryMode === "purchase"
+                  ? "Data zakupu"
+                  : "Data przeniesienia"}
             </label>
             <input
               type="date"
@@ -507,10 +705,178 @@ export default function TransactionForm({
                 </option>
               ))}
             </select>
+            {entryMode === "sell" ? (
+              <p className="mt-1.5 text-xs text-muted">
+                Dostępne:{" "}
+                <span className="font-medium text-ink">
+                  {formatCryptoQuantity(Math.max(0, availableQuantity))}
+                </span>
+                {positionStats.averagePLN != null
+                  ? ` · średnia ${formatMoneyPLN(positionStats.averagePLN)}`
+                  : ""}
+              </p>
+            ) : null}
           </div>
         </section>
 
-        {entryMode === "purchase" ? (
+        {entryMode === "sell" ? (
+          <section className="space-y-4">
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-muted">
+              2. Sprzedaż na Krakenie (EUR)
+            </h3>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-ink">
+                Ilość sprzedawana
+              </label>
+              <input
+                type="number"
+                step="0.00000001"
+                value={quantity}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setQuantity(value);
+                  syncSellNetFromGross(value, cryptoPriceEUR, feeEUR);
+                }}
+                placeholder="0.00757"
+                required
+                className={inputClassName}
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-ink">
+                Cena sprzedaży (EUR za 1 szt.)
+              </label>
+              <input
+                type="number"
+                step="0.00001"
+                value={cryptoPriceEUR}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setCryptoPriceEUR(value);
+                  syncSellNetFromGross(quantity, value, feeEUR);
+                }}
+                placeholder="2400"
+                required
+                className={inputClassName}
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-ink">
+                Prowizja (EUR)
+              </label>
+              <input
+                type="number"
+                step="0.0001"
+                value={feeEUR}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setFeeEUR(value);
+                  syncSellNetFromGross(quantity, cryptoPriceEUR, value);
+                }}
+                placeholder="0.12"
+                className={inputClassName}
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-ink">
+                Kwota netto (EUR)
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                value={netSaleEUR}
+                onChange={(event) => setNetSaleEUR(event.target.value)}
+                placeholder="17.67"
+                required
+                className={inputClassName}
+              />
+              <p className="mt-1.5 text-xs text-muted">
+                EUR zostaje na Krakenie. Valora dolicza to do puli „Odzyskane” po
+                przeliczeniu na PLN.
+              </p>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-ink">
+                Kurs EUR (PLN za 1 EUR)
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  step="0.0001"
+                  value={eurRate}
+                  onChange={(event) => {
+                    setEurRate(event.target.value);
+                    setNbpRateInfo("");
+                  }}
+                  placeholder="4.30"
+                  required
+                  className={inputClassName}
+                />
+                <button
+                  type="button"
+                  onClick={handleFetchNbpRate}
+                  disabled={isFetchingNbpRate || !date}
+                  className="shrink-0 rounded-lg border border-line px-3 py-3 text-sm text-ink transition hover:bg-ink hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isFetchingNbpRate ? "Pobieram…" : "Kurs NBP"}
+                </button>
+              </div>
+              {nbpRateInfo && (
+                <p className="mt-1.5 text-xs text-gain">{nbpRateInfo}</p>
+              )}
+              {nbpRateError && (
+                <p className="mt-1.5 text-xs text-loss">{nbpRateError}</p>
+              )}
+            </div>
+
+            <div className="rounded-xl border border-line bg-paper px-4 py-3 text-sm text-muted">
+              <p>
+                Odzyskane (netto PLN):{" "}
+                <span className="font-semibold text-ink">
+                  {sellPreview.netPln > 0
+                    ? formatMoneyPLN(sellPreview.netPln)
+                    : "—"}
+                </span>
+              </p>
+              <p className="mt-1">
+                Koszt sprzedanej części:{" "}
+                <span className="font-medium text-ink">
+                  {sellPreview.costSoldPln > 0
+                    ? formatMoneyPLN(sellPreview.costSoldPln)
+                    : "—"}
+                </span>
+              </p>
+              <p className="mt-1">
+                Zysk zrealizowany:{" "}
+                <span
+                  className={`font-semibold ${
+                    sellPreview.netPln > 0
+                      ? sellPreview.realized >= 0
+                        ? "text-gain"
+                        : "text-loss"
+                      : "text-ink"
+                  }`}
+                >
+                  {sellPreview.netPln > 0
+                    ? `${sellPreview.realized >= 0 ? "+" : ""}${formatMoneyPLN(sellPreview.realized)}`
+                    : "—"}
+                </span>
+              </p>
+              <p className="mt-2 text-xs">
+                Odzyskane ≠ zysk. Do puli idzie pełne netto (np.{" "}
+                {sellPreview.net > 0
+                  ? formatMoneyEUR(sellPreview.net)
+                  : "17,67 EUR"}
+                ), a zysk to netto minus koszt części.
+              </p>
+            </div>
+          </section>
+        ) : entryMode === "purchase" ? (
           <>
             <section className="space-y-4">
               <h3 className="text-sm font-semibold uppercase tracking-wide text-muted">
@@ -558,9 +924,6 @@ export default function TransactionForm({
                   required
                   className={inputClassName}
                 />
-                <p className="mt-1.5 text-xs text-muted">
-                  PLN ↔ EUR przeliczają się wzajemnie przez kurs
-                </p>
               </div>
 
               <div>
@@ -635,11 +998,6 @@ export default function TransactionForm({
                   required
                   className={inputClassName}
                 />
-                <p className="mt-1.5 text-xs text-muted">
-                  Ilość = EUR ÷ cena (jak volume z giełdy). Prowizja jest osobno
-                  i nie pomniejsza ilości — możesz wkleić dokładną wartość z
-                  Krakena.
-                </p>
               </div>
             </section>
           </>
@@ -745,11 +1103,6 @@ export default function TransactionForm({
                 required
                 className={inputClassName}
               />
-              <p className="mt-1.5 text-xs text-muted">
-                {avgPriceCurrency === "EUR"
-                  ? "Średnia cena w euro za 1 sztukę"
-                  : "Średnia = koszt ÷ ilość (albo wpisz ręcznie)"}
-              </p>
             </div>
 
             {avgPriceCurrency === "EUR" ? (
@@ -795,9 +1148,6 @@ export default function TransactionForm({
                     required
                     className={inputClassName}
                   />
-                  <p className="mt-1.5 text-xs text-muted">
-                    Np. 1450 zł + ilość 227,37174 → średnia ≈ 6,38 zł
-                  </p>
                 </div>
 
                 <div>
@@ -822,16 +1172,11 @@ export default function TransactionForm({
                       type="button"
                       onClick={handleFetchNbpRate}
                       disabled={isFetchingNbpRate || !date}
-                      className="shrink-0 rounded-lg border border-line px-3 py-3 text-sm text-ink transition hover:bg-ink disabled:cursor-not-allowed disabled:opacity-50"
+                      className="shrink-0 rounded-lg border border-line px-3 py-3 text-sm text-ink transition hover:bg-ink hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {isFetchingNbpRate ? "Pobieram…" : "Kurs NBP"}
                     </button>
                   </div>
-                  <p className="mt-1.5 text-xs text-muted">
-                    Nie musisz pamiętać kursu — pobierz średni kurs NBP z daty
-                    transakcji. Do porównania z ceną rynkową wystarczy też sama
-                    średnia PLN.
-                  </p>
                   {nbpRateInfo && (
                     <p className="mt-1.5 text-xs text-gain">{nbpRateInfo}</p>
                   )}
@@ -841,42 +1186,6 @@ export default function TransactionForm({
                 </div>
               </>
             )}
-
-            <div className="rounded-xl border border-line bg-paper px-4 py-3 text-sm text-muted">
-              <p>
-                Całkowity koszt PLN:{" "}
-                <span className="font-medium text-ink">
-                  {investedPLN ? `${investedPLN} zł` : "—"}
-                </span>
-              </p>
-              <p className="mt-1">
-                Średnia PLN:{" "}
-                <span className="font-medium text-ink">
-                  {avgPriceCurrency === "PLN" && avgPrice
-                    ? `${avgPrice} zł`
-                    : "—"}
-                </span>
-              </p>
-              <p className="mt-1">
-                Koszt w EUR:{" "}
-                <span className="font-medium text-ink">
-                  {investedEUR ? `€${investedEUR}` : "—"}
-                </span>
-              </p>
-              <p className="mt-1">
-                Średnia w EUR:{" "}
-                <span className="font-medium text-ink">
-                  {cryptoPriceEUR ? `€${cryptoPriceEUR}` : "—"}
-                </span>
-              </p>
-              <p className="mt-1">
-                Kurs EUR:{" "}
-                <span className="font-medium text-ink">
-                  {eurRate || "—"}
-                </span>
-              </p>
-              <p className="mt-1">Prowizja: brak (0 EUR)</p>
-            </div>
           </section>
         )}
       </div>
